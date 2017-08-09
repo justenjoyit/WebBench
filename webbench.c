@@ -77,6 +77,7 @@ static void benchcore(const char* host,const int port, const char *request);
 static int bench(void);
 static void build_request(const char *url);
 
+//信号处理函数
 static void alarm_handler(int signal)
 {
     timerexpired=1;
@@ -160,6 +161,7 @@ int main(int argc, char *argv[])
         return 2;
     }
 
+	//默认一个客户端，30秒运行时间
     if(clients==0) clients=1;
     if(benchtime==0) benchtime=30;
  
@@ -168,6 +170,7 @@ int main(int argc, char *argv[])
             "Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.\n"
             );
  
+	//构造HTTP
     build_request(argv[optind]);
  
     // print request info ,do it in function build_request
@@ -212,9 +215,11 @@ int main(int argc, char *argv[])
     
     printf(".\n");
     
+	//返回请求结果
     return bench();
 }
 
+//构造http请求
 void build_request(const char *url)
 {
     char tmp[10];
@@ -225,11 +230,13 @@ void build_request(const char *url)
     memset(host,0,MAXHOSTNAMELEN);
     memset(request,0,REQUEST_SIZE);
 
+	//判断使用的HTTP协议版本
     if(force_reload && proxyhost!=NULL && http10<1) http10=1;
     if(method==METHOD_HEAD && http10<1) http10=1;
     if(method==METHOD_OPTIONS && http10<2) http10=2;
     if(method==METHOD_TRACE && http10<2) http10=2;
 
+	//构造方法
     switch(method)
     {
         default:
@@ -354,8 +361,9 @@ static int bench(void)
     /* fork childs */
     for(i=0;i<clients;i++)
     {
+		//创建进程
         pid=fork();
-        if(pid <= (pid_t) 0)
+        if(pid <= (pid_t) 0)  //子进程或错误
         {
             /* child process or error*/
             sleep(1); /* make childs faster */
@@ -370,7 +378,7 @@ static int bench(void)
         return 3;
     }
 
-    if(pid == (pid_t) 0)
+    if(pid == (pid_t) 0)  //子进程
     {
         /* I am a child */
         if(proxyhost==NULL)
@@ -391,7 +399,7 @@ static int bench(void)
 
         return 0;
     } 
-    else
+    else  //父进程
     {
         f=fdopen(mypipe[0],"r");
         if(f==NULL) 
@@ -445,6 +453,9 @@ void benchcore(const char *host,const int port,const char *req)
     /* setup alarm signal handler */
     sa.sa_handler=alarm_handler;
     sa.sa_flags=0;
+	//Linux提供了alarm系统调用和SIGALRM信号
+	//在Linux系统下，每一个进程都有惟一的一个定时器，该定时器提供了以秒为单位的定时功能
+	//在定时器设置的超时时间到达后，调用alarm的进程将收到SIGALRM信号。
     if(sigaction(SIGALRM,&sa,NULL))
         exit(3);
     
@@ -453,7 +464,7 @@ void benchcore(const char *host,const int port,const char *req)
     rlen=strlen(req);
     nexttry:while(1)
     {
-        if(timerexpired)
+        if(timerexpired)  //截止时间已到
         {
             if(failed>0)
             {
